@@ -1,0 +1,51 @@
+# Automatic run-folder mirroring to Google Drive (skill §15).
+#
+# The mirror runs DURING the run, on a background thread, from the moment the
+# run directory exists -- a crashed run's logs are the ones most worth having.
+# There is no per-run prompt.
+#
+# Local: this uses the Google Drive for Desktop *folder*, not the Drive API.
+#   macOS -> ~/Library/CloudStorage/GoogleDrive-<account>/My Drive
+# Colab: mount once at the top of the notebook; the mounted path is the target.
+#   from google.colab import drive; drive.mount('/content/drive')
+#
+# If sync is enabled and no Drive folder can be found, the run FAILS rather than
+# silently keeping everything local.
+enabled: true
+
+# null -> auto-detect (Colab mount, then Drive for Desktop).
+root: null
+subdir: amdt-runs
+interval_s: 60
+
+# Nothing is written straight into the synced folder: artifacts are staged in
+# the local run directory and moved across with an atomic rename, so Drive never
+# uploads a half-written checkpoint or a log truncated mid-line.
+
+# Exclusion list, stated here rather than buried in code. Large, re-derivable,
+# or already versioned elsewhere.
+excludes:
+  - "*.tmp"
+  - "*.part"
+  - "*.lock"
+  - ".git"
+  - ".git/*"
+  - "wandb"
+  - "wandb/*"
+  - "stego/*"          # cached stego images: re-derivable exactly from the seed
+  - "data/*"           # raw datasets live in a cache outside the repo
+  - "*.pgm"
+  - "*.zip"
+  - "*.tar.bz2"
+  - ".venv/*"
+  - "__pycache__/*"
+  - "*.pyc"
+
+include_checkpoints: true
+max_file_mb: 512
+
+# Retention: keep the last N runs plus every run referenced by a commit message.
+# A run whose ID appears in the provenance record of a reported result is
+# evidence and is never pruned, however old.
+prune: true
+keep_last_n: 20

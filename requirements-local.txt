@@ -1,0 +1,36 @@
+# Local Mac (env=local). Everything except CNN steganalysis runs here:
+# the GA, SPAM/SRM features, the FLD ensemble, statistics, plots and tables.
+#
+#     python3 -m venv .venv && source .venv/bin/activate
+#     pip install -r requirements-local.txt
+#
+# torch is the CPU wheel on purpose. The CUDA build pulls ~2.5 GB of libraries
+# that will never execute on this machine, and MPS is refused for reported runs
+# (unsupported ops fall back to CPU silently, which makes latency meaningless).
+# CNN steganalysis belongs on Colab -- see requirements.txt.
+
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
+numpy==2.2.6
+scipy==1.15.3
+pandas==2.3.3
+scikit-learn==1.7.2
+PyWavelets==1.8.0
+Pillow==12.2.0
+matplotlib==3.10.9
+hydra-core==1.3.5
+omegaconf==2.3.0
+tqdm==4.67.1
+joblib==1.5.2
+pytest==8.4.2
+psutil==6.1.1
+
+torch==2.5.1
+torchvision==0.20.1
+
+# run_overnight.sh runs with tracking=wandb, so this is not optional for it.
+wandb==0.18.7
+
+# Only needed for search.enabled=true (Optuna hyper-parameter study).
+# optuna==4.1.0

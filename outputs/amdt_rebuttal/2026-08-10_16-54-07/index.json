@@ -1,0 +1,90 @@
+{
+  "run_dir": "./outputs/amdt_rebuttal/2026-08-10_16-54-07",
+  "studies": [
+    "quality",
+    "ablation",
+    "targeted",
+    "runtime",
+    "stats"
+  ],
+  "stego_cache": {
+    "backend": "disk",
+    "projected_mb": 1450.0,
+    "stored": 5800,
+    "path": "./outputs/amdt_rebuttal/2026-08-10_16-54-07/stego"
+  },
+  "config_hash": "f152bd1",
+  "tracker_run": "f3508db09d7d6e12",
+  "tracker_url": "https://wandb.ai/yazan-aljeroudi-rachis-systems/GA-Stegno/runs/f3508db09d7d6e12",
+  "git_commit": null,
+  "sync": {
+    "enabled": true,
+    "sync_root": "~/GoogleDrive/My Drive/amdt-runs",
+    "sync_target": "~/GoogleDrive/My Drive/amdt-runs/2026-08-10_16-54-07",
+    "run_id": "2026-08-10_16-54-07",
+    "files_synced": 32,
+    "megabytes_synced": 4.01,
+    "excludes": [
+      "*.tmp",
+      "*.part",
+      "*.lock",
+      ".git",
+      ".git/*",
+      "wandb",
+      "wandb/*",
+      "stego/*",
+      "data/*",
+      "*.pgm",
+      "*.zip",
+      "*.tar.bz2",
+      ".venv/*",
+      "__pycache__/*",
+      "*.pyc"
+    ],
+    "errors": []
+  },
+  "figures": [
+    "fig02_psnr.pdf",
+    "fig02_psnr.svg",
+    "fig03_ssim.pdf",
+    "fig03_ssim.svg",
+    "fig04_mse.pdf",
+    "fig04_mse.svg",
+    "fig05_laplacian.pdf",
+    "fig05_laplacian.svg",
+    "fig06_efficiency.pdf",
+    "fig06_efficiency.svg",
+    "fig07_psnr_vs_rate.pdf",
+    "fig07_psnr_vs_rate.svg",
+    "fig08_correlation.pdf",
+    "fig08_correlation.svg",
+    "fig09_ablation_psnr.pdf",
+    "fig09_ablation_psnr.svg",
+    "fig12_runtime.pdf",
+    "fig12_runtime.svg",
+    "fig13_convergence.pdf",
+    "fig13_convergence.svg"
+  ],
+  "tables": [
+    "tab_ablation.tex",
+    "tab_quality.tex",
+    "tab_reproducibility.tex",
+    "tab_runtime.tex",
+    "tab_significance.tex",
+    "tab_targeted.tex"
+  ],
+  "results": [
+    "ablation.csv",
+    "complexity.csv",
+    "convergence.csv",
+    "decomposition_spec.json",
+    "ga_runtime.csv",
+    "quality.csv",
+    "reproducibility_manifest.json",
+    "runtime.csv",
+    "significance.csv",
+    "significance_flagged_small_effects.csv",
+    "targeted_image.csv",
+    "targeted_payload.csv"
+  ]
+}

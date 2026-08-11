@@ -1,0 +1,74 @@
+{
+  "layers": [
+    {
+      "id": "T1",
+      "name": "bit complementation",
+      "formula": "T1(m)_i = m_i XOR alpha",
+      "parameters": {
+        "alpha": "1 bit, in header, GA-optimised"
+      },
+      "role": "distortion shaping (not a security layer)",
+      "invertible": true
+    },
+    {
+      "id": "T2",
+      "name": "bit reversal",
+      "formula": "T2(m)_i = m_{L+1-i} if beta=1 else m_i",
+      "parameters": {
+        "beta": "1 bit, in header, GA-optimised"
+      },
+      "role": "distortion shaping (not a security layer)",
+      "invertible": true
+    },
+    {
+      "id": "T3",
+      "name": "keyed block scrambling",
+      "formula": "partition into ceil(L/B) blocks; permute blocks by pi ~ FisherYates(KS_K('blk')); rotate block j left by rho_{pi(j)} = KS_K('rot'||j) mod B",
+      "parameters": {
+        "sigma": "1 bit enable, in header",
+        "block_idx": "2 bits -> B in (64, 128, 256, 512)",
+        "pi, rho": "derived from secret key K, never transmitted"
+      },
+      "role": "security layer: destroys local payload structure",
+      "invertible": true
+    },
+    {
+      "id": "T4",
+      "name": "keyed diffusion",
+      "formula": "s_i = t_i XOR s_{i-1} XOR k_i,  k = KS_K('dif', L)",
+      "parameters": {
+        "delta": "1 bit enable, in header",
+        "k, IV": "derived from secret key K, never transmitted"
+      },
+      "role": "security layer: makes the embedded stream computationally indistinguishable from uniform, so payload-statistics attacks (chi-square, pairs-of-values) gain no advantage",
+      "invertible": true
+    },
+    {
+      "id": "S",
+      "name": "segmentation",
+      "formula": "segment s = m[floor(sL/n) : floor((s+1)L/n)]",
+      "parameters": {
+        "n_segments": "8 bits, in global header"
+      },
+      "role": "each segment gets an independent GA-optimised theta",
+      "invertible": true
+    }
+  ],
+  "header_bits": {
+    "alpha": 1,
+    "beta": 1,
+    "sigma": 1,
+    "block_idx": 2,
+    "delta": 1,
+    "reserved": 1
+  },
+  "key": "256-bit shared secret, never embedded",
+  "distortion_layers": [
+    "T1_complement",
+    "T2_reverse"
+  ],
+  "security_layers": [
+    "T3_block_scramble",
+    "T4_diffusion"
+  ]
+}

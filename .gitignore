@@ -1,0 +1,56 @@
+# Credentials -- never commit; a committed key must be rotated.
+kaggle.json
+.kaggle/
+.env
+*.pem
+*.key
+
+outputs/
+wandb/
+optuna.db
+runs_registry.json
+
+/data/          # dataset downloads at the repo root only -- an unanchored
+                # 'data/' also excludes the src/amdt/data package
+*.pgm
+*.zip
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store
+
+*.pt
+!best_model.pt
+*.ckpt
+
+# ---------------------------------------------------------------------------
+# Paper artifacts.  outputs/ is excluded wholesale above; the two run
+# directories the manuscript cites are re-included, but only their small
+# results / tables / figures and their run metadata.  The 8.7 GB of stego
+# images, the 5.3 GB cnn_payload.zip and the wandb dirs stay out.
+# ---------------------------------------------------------------------------
+!outputs/
+outputs/*
+!outputs/amdt_rebuttal/
+outputs/amdt_rebuttal/*
+!outputs/amdt_rebuttal/2026-08-10_16-54-07/
+!outputs/amdt_rebuttal/2026-08-11_02-08-16/
+outputs/amdt_rebuttal/2026-08-10_16-54-07/*
+outputs/amdt_rebuttal/2026-08-11_02-08-16/*
+!outputs/amdt_rebuttal/*/results/
+!outputs/amdt_rebuttal/*/tables/
+!outputs/amdt_rebuttal/*/figures/
+!outputs/amdt_rebuttal/*/index.json
+!outputs/amdt_rebuttal/*/provenance.json
+!outputs/amdt_rebuttal/*/dataset_pin.json
+!outputs/amdt_rebuttal/*/resolved_config.yaml
+
+# untouched pre-redaction copies of the run metadata -- local only
+*.original.json
+*.original.yaml
+
+# run logs: they carry absolute machine paths
+*.log
+outputs/amdt_rebuttal/*/run_experiments.log

@@ -1,0 +1,62 @@
+# Root Hydra config. Every number a reviewer might want to change lives in a
+# YAML file, never in Python -- see README.md section "Reproducibility".
+defaults:
+  - env: local                # local | local_explore | colab_cpu | colab_gpu
+  - dataset: local29
+  - ga: default
+  - steganalysis: srm_ensemble
+  - tracking: none            # `tracking=wandb` to enable W&B + git provenance
+  - search: optuna            # search.enabled=true to run a study
+  - supervisor: default       # supervisor.enabled=true to watch a CNN run
+  - sync: none                # `sync=drive` mirrors the run folder to Drive
+  - _self_
+
+experiment:
+  name: amdt_rebuttal
+  # >=5 seeds is the minimum for the significance tests in comment 4.
+  seeds: [0, 1, 2, 3, 4]
+  # Payload rates in bits per cover pixel. 0.05-0.4 bpp is the range used by the
+  # steganalysis literature; the manuscript's "% of maximum capacity" figures
+  # are emitted alongside by data.describe_payloads().
+  payload_rates_bpp: [0.05, 0.1, 0.2, 0.4]
+  # 256-bit shared secret for T3/T4. Overridden per run in production; fixed
+  # here so the released artifacts are byte-reproducible.
+  secret_key_hex: "2a7f4c9e1b6d80f3a5c2e7091d4b8fa63e5c1908d7b2a4f60c3e819d5a7b2f4c"
+  studies: [quality, ablation, targeted, steganalysis, runtime, stats]
+  verify_extraction: true
+  # Stego-image cache shared between the quality and steganalysis studies.
+  # auto -> RAM if it fits in max_cache_memory_mb, else PNG on disk, else no
+  # cache at all (the steganalysis study then re-embeds one method-rate set at
+  # a time, which is what makes a full BOSSBase sweep possible). Re-embedding is
+  # exact: payload and RNG are derived from (seed, method, rate, image).
+  stego_cache: auto
+  max_cache_memory_mb: 1024
+  max_cache_disk_mb: 20000
+
+methods:
+  proposed: [AMDT]
+  classical: [LSB, LSB-M, EA-LSB, GA-FT, PVD]
+  adaptive: [WOW, S-UNIWARD, HILL, MiPOD-lite]
+
+ablation:
+  variants: [full, no_T1T2, no_T3, no_T4, no_decomp, fixed_path, fixed_plane,
+             single_seg, no_ga, unconstrained]
+  rate_bpp: 0.1
+
+stats:
+  alpha: 0.05
+  n_bootstrap: 10000
+  correction: holm
+
+output:
+  root: outputs
+  figures: figures
+  tables: tables
+  results: results
+  formats: [pdf, svg]
+
+hydra:
+  run:
+    dir: ${output.root}/${experiment.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: ${output.root}/${experiment.name}/multirun/${now:%Y-%m-%d_%H-%M-%S}

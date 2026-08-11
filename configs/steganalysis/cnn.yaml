@@ -1,0 +1,20 @@
+# CNN steganalysis. Requires PyTorch + a CUDA GPU; the module raises on import
+# if torch is missing, so a skipped CNN run can never be mistaken for a passed one.
+kind: cnn
+model: yedroudj             # yedroudj | srnet
+epochs: 100
+batch_pairs: 16             # effective batch = 2 x batch_pairs (paired cover/stego)
+lr: 1.0e-3
+weight_decay: 5.0e-4
+optimizer: adamax           # SGD+momentum for SRNet is also standard
+scheduler: cosine
+num_workers: 2
+amp: true
+early_stop_patience: 20
+checkpoint_every: 1
+# On Colab point this at Drive so a disconnect costs nothing:
+#   checkpoint_dir: /content/drive/MyDrive/amdt_ckpt
+checkpoint_dir: null
+# SRNet converges far better with a curriculum: train at 0.4 bpp, then fine-tune
+# downwards, passing the previous best checkpoint here.
+curriculum_from: null

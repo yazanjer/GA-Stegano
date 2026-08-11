@@ -1,0 +1,12 @@
+# GA settings. Population/tournament/crossover/mutation match the manuscript
+# ("population 25, tournament 3, crossover 0.8, mutation 0.1"); generations is
+# reduced from the MATLAB default of 1000 because the convergence log shows the
+# best fitness plateaus long before then (see figures/convergence.pdf).
+population: 25
+generations: 100
+tournament_size: 3
+crossover_prob: 0.8
+mutation_prob: 0.1
+elitism: 1
+patience: 25
+n_segments: 4

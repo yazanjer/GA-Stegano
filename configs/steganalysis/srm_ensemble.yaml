@@ -1,0 +1,14 @@
+kind: classical
+features: srm_subset        # or spam686
+# Explicit worker count. -1 would make feature values depend on the host core
+# count via BLAS reduction order; resolve_n_jobs() rejects it and warns.
+n_jobs: 1
+classifier:
+  type: fld_ensemble        # Kodovsky-Fridrich
+  d_sub: null               # null -> automatic OOB search
+  n_learners: null          # null -> automatic growth
+  max_learners: 200
+  random_state: 0
+cross_validation:
+  n_folds: 5                # cover-wise; only used when the dataset is small
+  stratified: true

@@ -1,0 +1,15 @@
+# No Drive mirroring. Run artifacts stay on the local disk only.
+#
+# Use this on a machine with no Drive client, or for throwaway smoke runs.
+# For anything whose numbers will be reported, prefer sync=drive: an
+# unmirrored run directory is one disk failure away from being unreproducible,
+# and its logs are gone if the process crashes.
+enabled: false
+root: null
+subdir: amdt-runs
+interval_s: 60
+excludes: []
+include_checkpoints: false
+max_file_mb: 512
+prune: false
+keep_last_n: 20

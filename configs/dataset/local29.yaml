@@ -1,0 +1,22 @@
+# The 29 JPEG covers shipped with the MATLAB benchmark.
+# Continuity with the published benchmark numbers, but see `steganalysis_note`.
+name: local29
+root: "../baseline code matlab/Images"
+side: 512
+limit: null
+pattern: "*"
+source: >-
+  Image set distributed with the MATLAB benchmark implementation
+  ("baseline code matlab/Images", 29 images, README dated 6-2-2017).
+license: "As distributed with the benchmark code; not redistributable without permission."
+steganalysis_note: >-
+  29 covers is far below the >=10,000-image corpora used for SRM/CNN
+  steganalysis. Detection numbers on this set are reported with cover-wise
+  k-fold cross-validation and bootstrap confidence intervals, and are labelled
+  indicative. Switch to dataset=bossbase for the headline steganalysis table.
+split:
+  train: 0.6
+  val: 0.2
+  test: 0.2
+  cover_wise: true
+  n_folds: 5

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amdt-stego"
+version = "1.0.0"
+description = "GA-optimised multi-directional traversal image steganography with a full steganalysis and statistics pipeline"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::UserWarning", "ignore::RuntimeWarning"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]

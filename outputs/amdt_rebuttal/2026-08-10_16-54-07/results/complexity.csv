@@ -1,0 +1,11 @@
+stage,time,space,note
+traversal_order,O(N),O(N),one pass to materialise the visiting order per segment
+decomposition_T1_T2,O(L),O(L),elementwise
+decomposition_T3,O(L + (L/B) log(L/B)),O(L),Fisher-Yates over L/B blocks + one gather
+decomposition_T4,O(L),O(L),prefix XOR
+embed_one_candidate,O(N + L),O(N),dominated by the cover copy and the MSE evaluation
+ga_search,O(P*G*(N + L)),O(P*S + N),fitness evaluation dominates; memoised on the genotype
+extraction,O(N + L),O(L),single pass
+spam_features,O(N),O(1),"686-D, 4 directions"
+srm_subset,O(N * R),O(1),R residual types
+fld_ensemble,O(Ltrain * d_sub^2 + d_sub^3) per base learner,O(d_sub^2),Kodovsky-Fridrich; d_sub << full feature dimension

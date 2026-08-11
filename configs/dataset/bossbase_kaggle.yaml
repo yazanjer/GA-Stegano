@@ -1,0 +1,38 @@
+# BOSSBase 1.01 pulled from Kaggle instead of the original site.
+#
+# Credentials come from Colab Secrets (KAGGLE_USERNAME / KAGGLE_KEY) or
+# ~/.kaggle/kaggle.json with chmod 600 -- never from a config or a chat.
+# Fill in `pin` after the first download from the printed pin.json; on every
+# later run the pipeline compares against it and warns loudly on drift without
+# auto-upgrading.
+name: bossbase_kaggle
+kaggle:
+  enabled: true
+  slug: lolrudy/bossbase          # verify the slug before relying on it
+  kind: dataset                   # dataset | competition
+  cache_dir: null                 # null -> ~/.cache/amdt/kaggle (outside the repo)
+  pin:
+    version: null                 # e.g. "1"
+    sha256: null                  # archive SHA-256, printed on first download
+  license: >-
+    Check the dataset page before redistributing. BOSSBase itself is free for
+    research (cite Bas, Filler & Pevny, IH 2011); the Kaggle mirror may carry
+    additional terms.
+root: null                        # filled in by the loader after extraction
+side: 512
+limit: null
+pattern: "*.pgm"
+source: >-
+  BOSSBase 1.01 (10,000 never-compressed 512x512 grayscale covers), obtained
+  via the Kaggle mirror. Version and archive SHA-256 recorded in the run's
+  provenance record.
+steganalysis_note: >-
+  Standard corpus. Note this is not competition data -- there is no leaderboard
+  split to confuse with a held-out test set. The pipeline still carves its own
+  cover-wise test split before any feature extraction.
+split:
+  train: 0.5
+  val: 0.25
+  test: 0.25
+  cover_wise: true
+  n_folds: 1

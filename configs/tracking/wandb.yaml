@@ -1,0 +1,49 @@
+# Weights & Biases. Disabled by default so a fresh clone runs offline; the
+# provenance *record* is never optional -- with tracking off, metrics still go
+# to <run_dir>/metrics.jsonl.
+# Selecting this config group IS the request for tracking. Leaving it false
+# meant `tracking=wandb` resolved the credential, passed preflight, then logged
+# to a JSONL file -- a silent downgrade with a green light in front of it.
+enabled: true
+# Spelling confirmed by the author (2026-08-10): "Stegno", not "Stegano".
+# Do not "correct" it -- W&B creates a project on first use, so a well-meaning
+# fix would start a second, empty project and orphan the run history.
+project: GA-Stegno
+
+# The entity is the workspace slug in wandb.ai/<entity>/<project> -- NOT your
+# email, and NOT the organization. "yazan-aljeroudi-rachis-systems-org" is the
+# ORG; W&B rejects runs sent there ("you may not log runs directly to your
+# organization"). The team entity is the same string without the "-org" suffix.
+# Runs are visible to the team and count against team storage, not a personal
+# account. Pinned
+# explicitly rather than left null: with a team in the picture, the default
+# entity can differ between machines and between people, and a run that lands
+# in the wrong workspace is a run nobody finds again.
+# Verify at any time with:
+#     python run_experiments.py tracking=wandb tracking.preflight=true
+entity: yazan-aljeroudi-rachis-systems
+group: null                  # e.g. "rebuttal-r1" to bundle a sweep
+mode: online                 # online | offline | disabled
+tags: [rebuttal, jst-6070-2025]
+
+# Verify auth and print the resolved entity/project, then exit. Never prints
+# the key. Run this before an overnight job rather than discovering at 2 a.m.
+# that the credential was missing and 8 hours went untracked.
+preflight: false
+
+# The API key is NEVER stored here. `wandb login` writes it to ~/.netrc; on
+# Colab put it in Secrets as WANDB_API_KEY. A key committed to a repo or pasted
+# into a chat is account-wide and must be rotated, not just removed.
+
+# Version control and provenance (skill §11). One repository per paper.
+git:
+  enabled: false
+  # https://github.com/<owner>/<repo>.git -- never embed a token in this URL.
+  remote: null
+  branch: main
+  # Read from Colab Secrets (or $GITHUB_PAT); never pasted into a config or chat.
+  # Scope: single repo, Contents read/write only, expiry <= 90 days.
+  push: false
+  commit_on_new_best: true
+  commit_artifacts: true
+  lfs: true

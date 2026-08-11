@@ -1,0 +1,183 @@
+env:
+  name: local
+  device: cpu
+  reported: true
+  threads: 1
+  n_jobs: 1
+  allow_mps: false
+dataset:
+  name: local29
+  root: ../baseline code matlab/Images
+  side: 512
+  limit: null
+  pattern: '*'
+  source: Image set distributed with the MATLAB benchmark implementation ("baseline
+    code matlab/Images", 29 images, README dated 6-2-2017).
+  license: As distributed with the benchmark code; not redistributable without permission.
+  steganalysis_note: 29 covers is far below the >=10,000-image corpora used for SRM/CNN
+    steganalysis. Detection numbers on this set are reported with cover-wise k-fold
+    cross-validation and bootstrap confidence intervals, and are labelled indicative.
+    Switch to dataset=bossbase for the headline steganalysis table.
+  split:
+    train: 0.6
+    val: 0.2
+    test: 0.2
+    cover_wise: true
+    n_folds: 5
+ga:
+  population: 25
+  generations: 100
+  tournament_size: 3
+  crossover_prob: 0.8
+  mutation_prob: 0.1
+  elitism: 1
+  patience: 25
+  n_segments: 4
+steganalysis:
+  kind: classical
+  features: srm_subset
+  n_jobs: 1
+  classifier:
+    type: fld_ensemble
+    d_sub: null
+    n_learners: null
+    max_learners: 200
+    random_state: 0
+  cross_validation:
+    n_folds: 5
+    stratified: true
+tracking:
+  enabled: true
+  project: GA-Stegno
+  entity: yazan-aljeroudi-rachis-systems
+  group: null
+  mode: online
+  tags:
+  - rebuttal
+  - jst-6070-2025
+  preflight: false
+  git:
+    enabled: false
+    remote: null
+    branch: main
+    push: false
+    commit_on_new_best: true
+    commit_artifacts: true
+    lfs: true
+search:
+  enabled: false
+  objective: ga
+  n_trials: 40
+  timeout_s: null
+  storage: sqlite:///optuna.db
+  study_name: amdt_ga_search
+  direction: maximize
+  rate_bpp: 0.1
+  val_fraction: 0.2
+  pruner:
+    n_startup_trials: 5
+    n_warmup_steps: 3
+supervisor:
+  enabled: false
+  metric: val/p_e
+  lower_is_better: true
+  trip:
+    loss_median_multiple: 10.0
+    min_delta: 0.001
+    patience: 8
+    gap_threshold: 0.25
+    baseline_metric: 0.45
+    warmup_epochs: 10
+    max_rounds: 3
+    min_epochs_between: 5
+    poll_interval_s: 60
+  wandb_run_path: null
+  patch_branch: agent/patches
+sync:
+  enabled: true
+  root: null
+  subdir: amdt-runs
+  interval_s: 60
+  excludes:
+  - '*.tmp'
+  - '*.part'
+  - '*.lock'
+  - .git
+  - .git/*
+  - wandb
+  - wandb/*
+  - stego/*
+  - data/*
+  - '*.pgm'
+  - '*.zip'
+  - '*.tar.bz2'
+  - .venv/*
+  - __pycache__/*
+  - '*.pyc'
+  include_checkpoints: true
+  max_file_mb: 512
+  prune: true
+  keep_last_n: 20
+experiment:
+  name: amdt_rebuttal
+  seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  payload_rates_bpp:
+  - 0.05
+  - 0.1
+  - 0.2
+  - 0.4
+  secret_key_hex: 2a7f4c9e1b6d80f3a5c2e7091d4b8fa63e5c1908d7b2a4f60c3e819d5a7b2f4c
+  studies:
+  - quality
+  - ablation
+  - targeted
+  - runtime
+  - stats
+  verify_extraction: true
+  stego_cache: auto
+  max_cache_memory_mb: 1024
+  max_cache_disk_mb: 20000
+methods:
+  proposed:
+  - AMDT
+  classical:
+  - LSB
+  - LSB-M
+  - EA-LSB
+  - GA-FT
+  - PVD
+  adaptive:
+  - WOW
+  - S-UNIWARD
+  - HILL
+  - MiPOD-lite
+ablation:
+  variants:
+  - full
+  - no_T1T2
+  - no_T3
+  - no_T4
+  - no_decomp
+  - fixed_path
+  - fixed_plane
+  - single_seg
+  - no_ga
+  - unconstrained
+  rate_bpp: 0.1
+stats:
+  alpha: 0.05
+  n_bootstrap: 10000
+  correction: holm
+output:
+  root: outputs
+  figures: figures
+  tables: tables
+  results: results
+  formats:
+  - pdf
+  - svg

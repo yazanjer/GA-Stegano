@@ -1,0 +1,17 @@
+# No W&B, no git automation. Metrics still land in <run_dir>/metrics.jsonl --
+# a run without provenance is not an option, only the dashboard is.
+enabled: false
+project: amdt-steganography
+entity: null
+group: null
+mode: disabled
+tags: []
+
+git:
+  enabled: false
+  remote: null
+  branch: main
+  push: false
+  commit_on_new_best: false
+  commit_artifacts: false
+  lfs: false

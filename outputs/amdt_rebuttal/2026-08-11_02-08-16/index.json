@@ -1,0 +1,75 @@
+{
+  "run_dir": "./outputs/amdt_rebuttal/2026-08-11_02-08-16",
+  "studies": [
+    "quality",
+    "steganalysis",
+    "stats"
+  ],
+  "stego_cache": {
+    "backend": "disk",
+    "projected_mb": 5000.0,
+    "stored": 20000,
+    "path": "./outputs/amdt_rebuttal/2026-08-11_02-08-16/stego"
+  },
+  "config_hash": "2cd7203",
+  "tracker_run": "a9af516878805592",
+  "tracker_url": "https://wandb.ai/yazan-aljeroudi-rachis-systems/GA-Stegno/runs/a9af516878805592",
+  "git_commit": null,
+  "sync": {
+    "enabled": true,
+    "sync_root": "~/GoogleDrive/My Drive/amdt-runs",
+    "sync_target": "~/GoogleDrive/My Drive/amdt-runs/2026-08-11_02-08-16",
+    "run_id": "2026-08-11_02-08-16",
+    "files_synced": 32,
+    "megabytes_synced": 14.34,
+    "excludes": [
+      "*.tmp",
+      "*.part",
+      "*.lock",
+      ".git",
+      ".git/*",
+      "wandb",
+      "wandb/*",
+      "stego/*",
+      "data/*",
+      "*.pgm",
+      "*.zip",
+      "*.tar.bz2",
+      ".venv/*",
+      "__pycache__/*",
+      "*.pyc"
+    ],
+    "errors": []
+  },
+  "figures": [
+    "fig02_psnr.pdf",
+    "fig02_psnr.svg",
+    "fig03_ssim.pdf",
+    "fig03_ssim.svg",
+    "fig04_mse.pdf",
+    "fig04_mse.svg",
+    "fig06_efficiency.pdf",
+    "fig06_efficiency.svg",
+    "fig07_psnr_vs_rate.pdf",
+    "fig07_psnr_vs_rate.svg",
+    "fig08_correlation.pdf",
+    "fig08_correlation.svg",
+    "fig10_roc.pdf",
+    "fig10_roc.svg",
+    "fig11_detectability.pdf",
+    "fig11_detectability.svg"
+  ],
+  "tables": [
+    "tab_detection.tex",
+    "tab_quality.tex",
+    "tab_reproducibility.tex",
+    "tab_significance.tex"
+  ],
+  "results": [
+    "quality.csv",
+    "reproducibility_manifest.json",
+    "significance.csv",
+    "significance_flagged_small_effects.csv",
+    "steganalysis_classical.csv"
+  ]
+}

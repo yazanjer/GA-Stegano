@@ -1,0 +1,13 @@
+{
+  "slug": "bossbase",
+  "kind": "url",
+  "version": null,
+  "sha256": "9823e888d4cfa36e94a58676416ea840de3edf1eb663f605451abae3ba8c8524",
+  "archive": "~/.cache/amdt/kaggle/bossbase/archive.zip",
+  "license": "Free for research use; cite Bas, Filler & Pevny, IH 2011.",
+  "n_files": 10000,
+  "size_bytes": 2621590000,
+  "downloaded": "2026-08-10T18:08:20+00:00",
+  "drift": false,
+  "drift_note": null
+}

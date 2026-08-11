@@ -1,0 +1,11 @@
+# Local, multithreaded. For exploration only.
+#
+# Threads are left unpinned, so BLAS reduction order varies and wall-clock is
+# not comparable with a pinned run. The pipeline marks these timings invalid and
+# excludes them from the runtime table; metrics are still fine.
+name: local
+device: cpu
+reported: false
+threads: 0                  # ignored when reported=false
+n_jobs: 4                   # still explicit -- never -1
+allow_mps: false

@@ -1,0 +1,33 @@
+# Autonomous training supervision (skill §12).
+#
+# The watcher runs OUTSIDE the Colab runtime and only ever pushes a patch to
+# `agent/patches`; the in-notebook stub applies it between epochs. It observes
+# validation metrics only -- passing anything named *test* raises.
+#
+# Applies to the CNN steganalysis study. The GA study has no epochs and no loss
+# curve, so there is nothing to supervise there.
+enabled: false
+
+metric: val/p_e
+lower_is_better: true
+
+trip:
+  # divergence -- fires immediately
+  loss_median_multiple: 10.0
+  # plateau
+  min_delta: 0.001
+  patience: 8
+  # overfitting
+  gap_threshold: 0.25
+  # underperformance: P_E above this after warmup means the detector is weaker
+  # than a plain SRM+ensemble attacker, i.e. the CNN has not trained.
+  baseline_metric: 0.45
+  warmup_epochs: 10
+  # budget -- persisted in the checkpoint, not in memory
+  max_rounds: 3
+  min_epochs_between: 5
+  poll_interval_s: 60
+
+# 'entity/project/run_id' for the live run; null = read from the local tracker.
+wandb_run_path: null
+patch_branch: agent/patches

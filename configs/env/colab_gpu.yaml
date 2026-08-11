@@ -1,0 +1,11 @@
+# Hosted GPU runtime. The target for CNN steganalysis (Reviewer 1, comment 3).
+#
+# GPU timings are reportable -- the accelerator is named in the provenance
+# record and is stable within a session. The CPU-side stages running alongside
+# are not: keep them in a separate table row with their own hardware label.
+name: colab_gpu
+device: cuda
+reported: true
+threads: 2                  # dataloader workers; the GPU does the arithmetic
+n_jobs: 2
+allow_mps: false

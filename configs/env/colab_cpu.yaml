@@ -1,0 +1,12 @@
+# Hosted CPU runtime. Overflow path for memory-heavy exploration, and the
+# target for the reviewer demo notebook (which must run on a stranger's machine
+# with no setup).
+#
+# Timings from this target are automatically marked invalid: the VM's CPU model
+# changes between sessions. Metrics are reportable, speed numbers are not.
+name: colab_cpu
+device: cpu
+reported: false
+threads: 0
+n_jobs: 2                   # Colab CPU runtimes are 2-core; keep it honest
+allow_mps: false

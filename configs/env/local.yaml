@@ -1,0 +1,18 @@
+# Fixed local hardware. The default, and the only target whose CPU timings
+# belong in a results table.
+#
+# Local is the default not because it is fastest, but because a hosted runtime
+# gives you a different VM each session -- the CPU model varies and wall-clock
+# stops being comparable. Numerics survive thread pinning; timings do not.
+name: local
+device: cpu                 # cpu | cuda | mps
+# reported=true pins BLAS threads so the same seed gives the same floats.
+# Set false for exploration; those timings must not enter a table.
+reported: true
+threads: 1
+# Explicit worker count. Never -1: that ties results to the machine's core
+# count, and joblib copies the dataset into every worker.
+n_jobs: 1
+# MPS is refused for reported runs (silent CPU fallback, weaker determinism).
+# Only set true if you are labelling those rows separately.
+allow_mps: false
