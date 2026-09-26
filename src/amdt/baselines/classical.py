@@ -96,7 +96,11 @@ def edge_adaptive_lsb(cover: np.ndarray, payload: np.ndarray,
     detectable.
     """
     b = np.asarray(payload, dtype=np.uint8).reshape(-1)
-    mag = _sobel_magnitude(cover).reshape(-1)
+    # Revision 2: the gradient is computed on the LSB-cleared image so that the
+    # receiver can recompute the same ranking from the stego image (v1 used the
+    # cover's own gradient, which the receiver does not have, so v1 EA-LSB was
+    # not actually blindly decodable).
+    mag = _sobel_magnitude(cover & np.uint8(0xFE)).reshape(-1)
     order = np.argsort(-mag, kind="stable")
     n = min(b.size, order.size)
     idx = order[:n]

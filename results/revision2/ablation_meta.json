@@ -1,0 +1,29 @@
+{
+ "study": "ablation",
+ "n_tasks": 8000,
+ "todo": 8000,
+ "workers": 30,
+ "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+ "processor": "x86_64",
+ "python": "3.11.10 (main, Sep  7 2024, 18:35:41) [GCC 11.4.0]",
+ "cpu_model": "AMD EPYC 7763 64-Core Processor",
+ "ga": {
+  "population": 25,
+  "generations": 100,
+  "tournament_size": 3,
+  "crossover_prob": 0.8,
+  "mutation_prob": 0.1,
+  "elitism": 1,
+  "patience": 25,
+  "n_segments": 4
+ },
+ "argv": [
+  "revision/run_v2.py",
+  "ablation",
+  "--out",
+  "/workspace/runs/ablation",
+  "--workers",
+  "30"
+ ],
+ "started_utc": "2026-09-26T11:09:47Z"
+}

@@ -16,9 +16,16 @@ ablation table attributes an effect to a single cause:
     ``no_decomp``  T1-T4 all off    (raw payload bits embedded)
     ``fixed_path`` direction = 0    (raster only; = GA-FT baseline)
     ``fixed_plane`` mask = 1        (LSB plane only)
-    ``no_ga``      random genes, no search (matched-budget control)
+    ``no_ga``      GA replaced by random search with the *same number
+                   of fitness evaluations* the GA spent (matched budget)
+    ``no_search``  one random genome, no search at all -- O(N + L)
     ``single_seg`` n_segments = 1
+    ``unconstrained`` sigma/delta free (security constraint dropped)
     ============= ================================================
+
+``full`` is by construction the same computation as the deployed method
+(``AMDT`` in every other table): revision 2 reuses the same seeded run for
+both, so the manuscript reports one canonical number per (cover, seed, rate).
 """
 
 from __future__ import annotations
@@ -30,7 +37,8 @@ import numpy as np
 
 from ..evaluation.metrics import QualityReport, evaluate_pair, mse
 from ..ga.optimizer import GAConfig, GAResult, genome_to_chroms, optimise, random_search
-from .codec import Chromosome, EmbedResult, embed, extract, max_payload_bits, reserved_rows_for
+from .codec import (Chromosome, EmbedResult, embed, extract, max_payload_bits, new_nonce,
+                    reserved_rows_for)
 
 __all__ = ["AblationSpec", "ABLATIONS", "AMDTResult", "run_amdt", "capacity_bits"]
 
@@ -81,6 +89,7 @@ ABLATIONS: Dict[str, AblationSpec] = {
                                   {**SECURITY_LOCKS, "mask": 1, "bp_dir": 0}),
     "single_seg":    AblationSpec("single_seg", dict(SECURITY_LOCKS), force_segments=1),
     "no_ga":         AblationSpec("no_ga", dict(SECURITY_LOCKS), use_ga=False),
+    "no_search":     AblationSpec("no_search", dict(SECURITY_LOCKS), use_ga=False),
     "unconstrained": AblationSpec("unconstrained"),
 }
 
@@ -124,6 +133,8 @@ def run_amdt(
     rng: np.random.Generator,
     variant: str = "full",
     verify: bool = True,
+    budget: Optional[int] = None,
+    nonce: Optional[bytes] = None,
 ) -> AMDTResult:
     """Optimise embedding parameters for one (cover, payload) pair and embed.
 
@@ -136,11 +147,14 @@ def run_amdt(
                       "n_segments": spec.force_segments or ga_cfg.n_segments})
     cover = np.asarray(cover, dtype=np.uint8)
     payload = np.asarray(payload, dtype=np.uint8).reshape(-1)
+    # One nonce per stego object, drawn before the search so the GA evaluates
+    # candidates under exactly the keystream the final embedding will use.
+    nonce = nonce if nonce is not None else new_nonce(rng)
 
     def fitness(chroms: List[Chromosome]) -> float:
         chroms = spec.apply(chroms)
         try:
-            res = embed(cover, payload, chroms, key)
+            res = embed(cover, payload, chroms, key, nonce)
         except ValueError:
             return -np.inf                      # infeasible capacity
         return -mse(cover, res.stego)
@@ -148,13 +162,22 @@ def run_amdt(
     ga_res: Optional[GAResult]
     if spec.use_ga:
         ga_res = optimise(fitness, cfg, rng)
+    elif variant == "no_search":
+        # a single feasible random genome: no search of any kind
+        ga_res = random_search(fitness, 1, cfg.n_segments, rng)
+        tries = 1
+        while not np.isfinite(ga_res.fitness) and tries < 1000:
+            ga_res = random_search(fitness, 1, cfg.n_segments, rng)
+            tries += 1
     else:
-        # matched-budget random control: same number of fitness evaluations
-        budget = cfg.population * (cfg.generations + 1)
-        ga_res = random_search(fitness, budget, cfg.n_segments, rng)
+        # matched-budget random control.  ``budget`` should be the number of
+        # distinct fitness evaluations the GA spent on this (cover, seed); the
+        # nominal ceiling P*(G+1) is only a fallback.
+        b = int(budget) if budget else cfg.population * (cfg.generations + 1)
+        ga_res = random_search(fitness, b, cfg.n_segments, rng)
 
     chroms = spec.apply(ga_res.chromosomes)
-    result = embed(cover, payload, chroms, key)
+    result = embed(cover, payload, chroms, key, nonce)
     quality = evaluate_pair(cover, result.stego, result.payload_bits, result.n_changes)
 
     ok = True

@@ -16,10 +16,17 @@ questions require:
   in the runtime table -- a fixed 1000-generation budget (the MATLAB default)
   wastes ~90 % of the wall-clock on this problem, which matters for comment 6.
 
-Search space: :math:`|\\Theta| = 16 \\cdot 512 \\cdot 512 \\cdot 15 \\cdot 2^3
-\\cdot 4 \\cdot 2 = 4.02\\times10^9` per segment, so exhaustive search is not an
-option and the GA's value is measurable against random search (see
-``run_experiments.py --study ga_vs_random``).
+Search space (per segment, 33-bit chromosome, mask 0 excluded):
+:math:`|\\Theta| = 16 \\cdot 512^2 \\cdot 15 \\cdot 2^5 \\cdot 4 = 8.05\\times10^9`;
+under the deployed security constraint sigma = delta = 1 the reachable space is
+:math:`|\\Theta|/4 = 2.01\\times10^9`.  :func:`search_space_size` returns both.
+Exhaustive search is not an option at either size, and the GA's value is
+measured against a matched-budget random search (``no_ga``) and a single random
+draw (``no_search``).
+
+Revision 2: ``optimise`` / ``random_search`` accept explicit gene ``bounds`` and
+a ``decode`` callable, so the same GA drives both the MSE-fitness AMDT
+chromosome and the 35-bit AMDT-D chromosome of :mod:`amdt.stego.amdt_d`.
 """
 
 from __future__ import annotations
@@ -95,9 +102,12 @@ class GAResult:
         }
 
 
-def search_space_size(n_segments: int = 1) -> float:
+def search_space_size(n_segments: int = 1, constrained: bool = False) -> float:
+    """Genotype-space size.  ``constrained=True`` applies sigma = delta = 1."""
     per = 1.0
-    for lo, hi in GENE_BOUNDS:
+    for name, (lo, hi) in zip(GENE_NAMES, GENE_BOUNDS):
+        if constrained and name in ("sigma", "delta"):
+            continue
         per *= (hi - lo + 1)
     return per ** n_segments
 
@@ -110,18 +120,28 @@ _HI = np.array([hi for _, hi in GENE_BOUNDS], dtype=np.int64)
 _NGENE = len(GENE_BOUNDS)
 
 
-def _random_genome(rng: np.random.Generator, n_seg: int) -> np.ndarray:
-    return np.concatenate([rng.integers(_LO, _HI + 1) for _ in range(n_seg)])
+def _bounds(bounds=None) -> Tuple[np.ndarray, np.ndarray]:
+    if bounds is None:
+        return _LO, _HI
+    return (np.array([lo for lo, _ in bounds], dtype=np.int64),
+            np.array([hi for _, hi in bounds], dtype=np.int64))
 
 
-def _clip(genome: np.ndarray, n_seg: int) -> np.ndarray:
-    g = genome.reshape(n_seg, _NGENE)
-    return np.clip(g, _LO, _HI).reshape(-1)
+def _random_genome(rng: np.random.Generator, n_seg: int, bounds=None) -> np.ndarray:
+    lo, hi = _bounds(bounds)
+    return np.concatenate([rng.integers(lo, hi + 1) for _ in range(n_seg)])
 
 
-def genome_to_chroms(genome: np.ndarray, n_seg: int) -> List[Chromosome]:
-    g = np.asarray(genome, dtype=np.int64).reshape(n_seg, _NGENE)
-    return [Chromosome.from_vector(row) for row in g]
+def _clip(genome: np.ndarray, n_seg: int, bounds=None) -> np.ndarray:
+    lo, hi = _bounds(bounds)
+    g = genome.reshape(n_seg, lo.size)
+    return np.clip(g, lo, hi).reshape(-1)
+
+
+def genome_to_chroms(genome: np.ndarray, n_seg: int, decode=None, n_gene: int = _NGENE) -> List:
+    g = np.asarray(genome, dtype=np.int64).reshape(n_seg, n_gene)
+    dec = decode or Chromosome.from_vector
+    return [dec(row) for row in g]
 
 
 def _tournament(rng: np.random.Generator, fit: np.ndarray, k: int) -> int:
@@ -140,12 +160,14 @@ def _two_point_crossover(rng: np.random.Generator, a: np.ndarray, b: np.ndarray
     return c1, c2
 
 
-def _mutate(rng: np.random.Generator, genome: np.ndarray, p: float, n_seg: int) -> np.ndarray:
-    g = genome.reshape(n_seg, _NGENE).copy()
+def _mutate(rng: np.random.Generator, genome: np.ndarray, p: float, n_seg: int,
+            bounds=None) -> np.ndarray:
+    lo, hi = _bounds(bounds)
+    g = genome.reshape(n_seg, lo.size).copy()
     hit = rng.random(g.shape) < p
     if hit.any():
-        fresh = rng.integers(np.broadcast_to(_LO, g.shape),
-                             np.broadcast_to(_HI + 1, g.shape))
+        fresh = rng.integers(np.broadcast_to(lo, g.shape),
+                             np.broadcast_to(hi + 1, g.shape))
         g[hit] = fresh[hit]
     return g.reshape(-1)
 
@@ -158,6 +180,8 @@ def optimise(
     cfg: GAConfig,
     rng: np.random.Generator,
     seed_genomes: Optional[Sequence[np.ndarray]] = None,
+    bounds: Optional[Sequence[Tuple[int, int]]] = None,
+    decode: Optional[Callable] = None,
 ) -> GAResult:
     """Maximise ``fitness_fn``.
 
@@ -168,10 +192,11 @@ def optimise(
     """
     t0 = time.perf_counter()
     n_seg = cfg.n_segments
-    pop = np.stack([_random_genome(rng, n_seg) for _ in range(cfg.population)])
+    n_gene = len(bounds) if bounds is not None else _NGENE
+    pop = np.stack([_random_genome(rng, n_seg, bounds) for _ in range(cfg.population)])
     if seed_genomes:
         for i, g in enumerate(seed_genomes[: cfg.population]):
-            pop[i] = _clip(np.asarray(g, dtype=np.int64), n_seg)
+            pop[i] = _clip(np.asarray(g, dtype=np.int64), n_seg, bounds)
 
     cache: Dict[bytes, float] = {}
     evals = 0
@@ -181,7 +206,7 @@ def optimise(
         key = genome.tobytes()
         if key in cache:
             return cache[key]
-        val = float(fitness_fn(genome_to_chroms(genome, n_seg)))
+        val = float(fitness_fn(genome_to_chroms(genome, n_seg, decode, n_gene)))
         cache[key] = val
         evals += 1
         return val
@@ -214,9 +239,9 @@ def optimise(
                 c1, c2 = _two_point_crossover(rng, p1, p2)
             else:
                 c1, c2 = p1.copy(), p2.copy()
-            new.append(_clip(_mutate(rng, c1, cfg.mutation_prob, n_seg), n_seg))
+            new.append(_clip(_mutate(rng, c1, cfg.mutation_prob, n_seg, bounds), n_seg, bounds))
             if len(new) < cfg.population:
-                new.append(_clip(_mutate(rng, c2, cfg.mutation_prob, n_seg), n_seg))
+                new.append(_clip(_mutate(rng, c2, cfg.mutation_prob, n_seg, bounds), n_seg, bounds))
 
         pop = np.stack(new)
         fit = np.array([evaluate(g) for g in pop])
@@ -232,7 +257,7 @@ def optimise(
             break
 
     return GAResult(
-        chromosomes=genome_to_chroms(best_genome, n_seg),
+        chromosomes=genome_to_chroms(best_genome, n_seg, decode, n_gene),
         fitness=best_fit,
         history=hist,
         evaluations=evals,
@@ -247,18 +272,25 @@ def random_search(
     budget: int,
     n_segments: int,
     rng: np.random.Generator,
+    bounds: Optional[Sequence[Tuple[int, int]]] = None,
+    decode: Optional[Callable] = None,
 ) -> GAResult:
     """Matched-budget random search -- the control the GA must beat.
 
-    Reviewers routinely ask whether the GA is doing anything a random draw of
-    the same size would not; this makes the answer a measured number.
+    ``budget`` fitness evaluations of independent uniformly drawn genomes.  In
+    revision 2 the ablation driver sets ``budget`` to the number of *distinct*
+    fitness evaluations the GA actually spent on the same (cover, seed), so the
+    two arms do the same amount of work.  (v1 used the GA's nominal ceiling,
+    P*(G+1) = 2,525, with no early stop, which is why the v1 ``no_ga`` row was
+    slower than the full GA.)  Cost is O(budget * (N + L)).
     """
+    n_gene = len(bounds) if bounds is not None else _NGENE
     t0 = time.perf_counter()
     hist = GAHistory()
     best_fit, best_genome = -np.inf, None
     for i in range(1, budget + 1):
-        g = _random_genome(rng, n_segments)
-        v = float(fitness_fn(genome_to_chroms(g, n_segments)))
+        g = _random_genome(rng, n_segments, bounds)
+        v = float(fitness_fn(genome_to_chroms(g, n_segments, decode, n_gene)))
         if v > best_fit:
             best_fit, best_genome = v, g
         if i % max(1, budget // 100) == 0 or i == budget:
@@ -270,7 +302,7 @@ def random_search(
             hist.evaluations.append(i)
             hist.elapsed_s.append(time.perf_counter() - t0)
     return GAResult(
-        chromosomes=genome_to_chroms(best_genome, n_segments),
+        chromosomes=genome_to_chroms(best_genome, n_segments, decode, n_gene),
         fitness=best_fit,
         history=hist,
         evaluations=budget,

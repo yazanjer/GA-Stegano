@@ -1,0 +1,7 @@
+{
+ "header_bit_mean_min": 0.0,
+ "header_bit_mean_max": 0.63,
+ "header_n": 100,
+ "magic_hit_stego": 0.0,
+ "magic_hit_cover": 0.01
+}

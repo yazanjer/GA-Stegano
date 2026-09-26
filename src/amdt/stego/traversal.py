@@ -131,6 +131,58 @@ def traversal_order(
     rows = (np.arange(h, dtype=np.int64) + int(y_off)) % h
     cols = (np.arange(w, dtype=np.int64) + int(x_off)) % w
 
+    # Vectorised (revision 2; output identical to the v1 per-row loop, which is
+    # kept as ``_traversal_order_loop`` and checked against in the tests).
+    if not spec.column_major:
+        slow_seq = rows[_line_order(h, spec.slow_descending)]
+        base_fast = cols[_line_order(w, spec.fast_descending)]
+        fast = np.broadcast_to(base_fast, (h, w)).copy()
+        if spec.serpentine and h > 1:
+            fast[1::2] = base_fast[::-1]
+        rr = np.repeat(slow_seq, w)
+        cc = fast.reshape(-1)
+    else:
+        slow_seq = cols[_line_order(w, spec.slow_descending)]      # columns are slow
+        base_fast = rows[_line_order(h, spec.fast_descending)]     # rows are fast
+        fast = np.broadcast_to(base_fast, (w, h)).copy()
+        if spec.serpentine and w > 1:
+            fast[1::2] = base_fast[::-1]
+        cc = np.repeat(slow_seq, h)
+        rr = fast.reshape(-1)
+
+    return rr * w + cc
+
+
+def _traversal_order_loop(
+    shape: Tuple[int, int],
+    direction: int,
+    x_off: int = 0,
+    y_off: int = 0,
+) -> np.ndarray:
+    """Flat (row-major) indices of every embeddable pixel, in visiting order.
+
+    Parameters
+    ----------
+    shape : (H, W) of the *embeddable region* (header rows already removed).
+    direction : 0..15, see module docstring.
+    x_off, y_off : cyclic rotation of the starting column / row.  These are the
+        ``xOff``/``yOff`` genes; rotating rather than truncating keeps the
+        traversal a bijection for every offset value.
+
+    Returns
+    -------
+    ndarray[int64] of length H*W with no repeated entry.
+    """
+    h, w = int(shape[0]), int(shape[1])
+    if h <= 0 or w <= 0:
+        return np.empty(0, dtype=np.int64)
+
+    spec = TraversalSpec.from_code(direction)
+
+    # Cyclic start offsets -> keeps every pattern a permutation of the region.
+    rows = (np.arange(h, dtype=np.int64) + int(y_off)) % h
+    cols = (np.arange(w, dtype=np.int64) + int(x_off)) % w
+
     if not spec.column_major:
         slow, fast = rows, cols          # rows are the slow axis
         slow_desc, fast_desc = spec.slow_descending, spec.fast_descending

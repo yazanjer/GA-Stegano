@@ -1,0 +1,5 @@
+,d_bias,d_bias,match_plaintext_xor,match_plaintext_xor
+,mean,std,mean,std
+keystream,,,,
+fresh nonce (v2),0.0055158730158729585,0.00439965690077843,0.499726800976801,0.007196921071989764
+reused (v1),0.002834249084249007,7.594167459646985e-05,1.0,0.0

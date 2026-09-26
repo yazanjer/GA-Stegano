@@ -146,10 +146,20 @@ def test_wrong_key_does_not_recover_the_payload():
     cover = _cover(rng)
     bits = bytes_to_bits(b"top secret" * 20)
     c = Chromosome(mask=3, sigma=1, delta=1, block_idx=2)
-    stego = embed(cover, bits, [c], KEY).stego
-    wrong, _ = extract(stego, bytes.fromhex("ff" * 32))
+    res = embed(cover, bits, [c], KEY, nonce=b"\x01" * 8)
+    stego = res.stego
+    # revision 2: the header is authenticated, so a wrong key is rejected outright
+    with pytest.raises(ValueError):
+        extract(stego, bytes.fromhex("ff" * 32))
+    # and even an attacker who knows the genes gets noise, not a near-miss
+    from amdt.stego.codec import _segment_pixels
+    from amdt.stego.bitplane import extract_bits_from_pixels
+    from amdt.stego.decomposition import derive_subkey, recompose
+    idx = _segment_pixels(stego.shape, c, int(np.ceil(bits.size / c.bits_per_pixel)),
+                          res.reserved_rows, 0, 1)
+    t = extract_bits_from_pixels(stego.reshape(-1)[idx], bits.size, c.mask, c.bp_dir)
+    wrong = recompose(t, c.decomposition, derive_subkey(bytes.fromhex("ff" * 32), b"\x01" * 8, 0))
     assert not np.array_equal(wrong, bits)
-    # and it should look like noise, not a near-miss
     assert 0.4 < wrong.mean() < 0.6
 
 

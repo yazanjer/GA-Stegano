@@ -14,12 +14,12 @@ Let :math:`K \in \{0,1\}^{256}` be a secret key shared by sender and receiver
 (it is *never* embedded in the cover; only the layer-enable flags and the
 block-size index travel in the header).  Write
 :math:`\mathrm{KS}_K(\texttt{label}, n)` for the first :math:`n` bits of
-SHA-256 in counter mode keyed by :math:`K`:
+HMAC-SHA256 in counter mode keyed by :math:`K`:
 
 .. math::
     \mathrm{KS}_K(\ell, n) = \mathrm{bits}\big(
-        \mathrm{SHA256}(K \| \ell \| \langle 0\rangle_{32}) \,\|\,
-        \mathrm{SHA256}(K \| \ell \| \langle 1\rangle_{32}) \,\|\, \cdots
+        \mathrm{HMAC}_K(\ell \| \langle 0\rangle_{32}) \,\|\,
+        \mathrm{HMAC}_K(\ell \| \langle 1\rangle_{32}) \,\|\, \cdots
     \big)_{1:n}.
 
 The four layers
@@ -80,54 +80,51 @@ decomposed and embedded under its *own* GA-optimised parameter vector
 :math:`\theta^{(s)}`, giving :math:`n_s` independent traversal paths, bit-plane
 masks and transformation flags inside one cover.
 
-Why this is more than "simple bit tricks" (Reviewer 1, comment 1)
------------------------------------------------------------------
-The reviewer is right that :math:`T_1` and :math:`T_2` alone are trivial and
-carry no security argument -- they are *distortion* controls, not security
-controls: they let the GA pick whichever of the four bit-orderings happens to
-agree best with the cover's LSB plane, which lowers the number of embedding
-changes.  That is their honest role and the code labels it as such
-(:func:`distortion_layers`).
+What the keyed layers do and do not guarantee (revision 2)
+---------------------------------------------------------
+:math:`T_1` and :math:`T_2` are *distortion* controls, not security controls:
+they let the GA pick whichever of the four bit-orderings agrees best with the
+cover's LSB plane.  The code labels them as such (:func:`distortion_layers`).
 
-The security argument rests on :math:`T_3\circ T_4`:
+The keyed layers :math:`T_3\circ T_4` are keyed with a per-message,
+per-segment sub-key :math:`K_s = \mathrm{HMAC}(K, \texttt{"AMDT-seg"}\|N\|s)`
+where :math:`N` is a fresh 64-bit nonce stored in clear in the header.
 
-1. *Uniformity.* Modelling SHA-256 as a random oracle, :math:`k` is uniform on
-   :math:`\{0,1\}^L` and independent of :math:`m`, hence :math:`s = T_4(t)` is
-   uniform on :math:`\{0,1\}^L` for **any** payload distribution.  Concretely,
-   the per-bit bias :math:`|\Pr[s_i=1]-\tfrac12|` is negligible even for
-   pathological payloads (all-zero, ASCII text, a bitmap) -- the case where
-   plain LSB embedding is most detectable, because natural payloads are far
-   from uniform and imprint their own histogram on the LSB plane.
-2. *Reduction.* With :math:`s` uniform and independent of the cover, the
-   detector can no longer exploit payload structure; the detection problem
-   reduces to distinguishing the *embedding-change* process alone.  Formally,
-   for any detector :math:`D`,
-   :math:`|\Pr[D(\text{stego})=1] - \Pr[D(\text{stego}_{\text{rand}})=1]|
-   \le \mathrm{Adv}^{\mathrm{prf}}_{\mathrm{SHA256}}`, i.e. content-dependent
-   attacks (chi-square / pairs-of-values / histogram attacks, which all test
-   for payload bias) gain no advantage over attacking a random payload.
-3. *Key-space.* :math:`T_3` contributes :math:`\log_2(n_B!) + n_B\log_2 B` bits
-   of uncertainty to an attacker who has *recovered the bit-plane and path*
-   but not :math:`K`; see :func:`keyspace_bits`.  Combined with the
-   :math:`4+9+9+4=26` bits of path/plane entropy per segment, this is what the
-   ablation in Table 2 quantifies empirically.
-4. *Difference from prior preprocessing.* Existing schemes encrypt the payload
-   *before* embedding with a fixed key and fixed positions (e.g. chaos-LSB,
-   AES-then-LSB).  Here the decomposition parameters are themselves
-   **jointly optimised with the embedding path by the GA**, per segment, so the
-   transformation and the carrier selection are chosen together to minimise
-   distortion under a security constraint, instead of being two independent
-   stages.  :func:`describe` emits this as machine-readable provenance.
+*Adversarial model.*  The adversary knows the algorithm, sees any number of
+stego objects (and therefore their nonces and, after decrypting nothing, the
+encrypted header bits), but not :math:`K`.
 
-Nothing in this module claims security beyond points 1-3: :math:`T_3`/:math:`T_4`
-defeat *payload-statistics* attacks, they do **not** by themselves defeat
-residual-based detectors such as SRM or a CNN.  That is exactly what the
-steganalysis experiments in ``src/amdt/steganalysis`` are for.
+*Claim (payload bits only).*  If HMAC-SHA256 is a PRF and nonces do not
+repeat, the embedded bit-stream :math:`s = T_4(T_3(\cdot))` of every segment
+is computationally indistinguishable from a uniformly random string of the same
+length, *whatever the payload* -- by the standard reduction for counter-mode
+stream ciphers: :math:`k = \mathrm{KS}_{K_s}(\texttt{"dif"}, L)` is a PRF
+output on distinct inputs, so :math:`s_i \oplus s_{i-1} = t_i \oplus k_i`
+is a one-time-pad encryption up to the PRF advantage.
+
+*Scope.*  This is a statement about the *content* of the embedded bits.  It
+removes the advantage of payload-statistics attacks (chi-square,
+pairs-of-values, histogram attacks on structured payloads).  It says nothing
+about the *embedding changes* themselves, which is what residual-based
+detectors (SRM, SRNet) observe; the steganalysis study measures that
+separately.  The manuscript states the empirical evidence (bias, entropy,
+autocorrelation, chi-square) alongside this conditional claim and does not
+present either as a proof of undetectability.
+
+*v1 defect fixed.*  Version 1 keyed every message and every segment with the
+same keystream (no nonce), so the XOR of two embedded streams leaked the XOR
+of the underlying payloads; the uniformity claim held for a single stego object
+only.  Revision 2 removes that reuse.
+
+:math:`T_3` contributes :math:`\log_2(n_B!) + n_B\log_2 B` bits of
+uncertainty about bit positions to an attacker who knows the path but not
+:math:`K`; see :func:`keyspace_bits`.
 """
 
 from __future__ import annotations
 
 import hashlib
+import hmac
 import math
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Sequence
@@ -138,6 +135,7 @@ __all__ = [
     "BLOCK_SIZES",
     "DecompositionParams",
     "keystream_bits",
+    "derive_subkey",
     "keyed_permutation",
     "complement",
     "reverse",
@@ -163,21 +161,38 @@ security_layers = ("T3_block_scramble", "T4_diffusion")
 # key-derived randomness
 # --------------------------------------------------------------------------- #
 def keystream_bits(key: bytes, label: str, n_bits: int) -> np.ndarray:
-    """First ``n_bits`` of SHA-256-CTR keyed by ``key`` as a uint8 0/1 array."""
+    """First ``n_bits`` of HMAC-SHA256 in counter mode, as a uint8 0/1 array.
+
+    ``KS_K(label, n) = bits(HMAC(K, label || <0>_32) || HMAC(K, label || <1>_32) || ...)[:n]``.
+
+    Revision 2 replaced the v1 construction ``SHA256(K || label || ctr)`` by
+    HMAC-SHA256, whose pseudo-randomness (PRF security) is a standard,
+    well-studied assumption, and the codec now calls this function with a
+    *per-message, per-segment* sub-key (see :func:`derive_subkey`), so the same
+    keystream is never reused across stego objects or across segments.
+    """
     if n_bits <= 0:
         return np.zeros(0, dtype=np.uint8)
     n_bytes = (n_bits + 7) // 8
-    blocks: List[bytes] = []
-    counter = 0
     label_b = label.encode("utf-8")
-    while sum(len(b) for b in blocks) < n_bytes:
-        blocks.append(
-            hashlib.sha256(key + label_b + counter.to_bytes(4, "little")).digest()
-        )
-        counter += 1
-    raw = b"".join(blocks)[:n_bytes]
+    n_blocks = (n_bytes + 31) // 32
+    raw = b"".join(
+        hmac.new(key, label_b + c.to_bytes(4, "little"), hashlib.sha256).digest()
+        for c in range(n_blocks)
+    )[:n_bytes]
     bits = np.unpackbits(np.frombuffer(raw, dtype=np.uint8))
     return bits[:n_bits].copy()
+
+
+def derive_subkey(key: bytes, nonce: bytes, segment: int, label: bytes = b"AMDT-seg") -> bytes:
+    """Per-message, per-segment 256-bit sub-key ``K_s = HMAC(K, label || nonce || s)``.
+
+    ``nonce`` is a fresh 64-bit value written in clear into the stego header;
+    it makes the T3/T4 keystreams of two stego objects produced under the same
+    long-term key independent (no keystream reuse -- the v1 construction reused
+    one keystream for every message and every segment).
+    """
+    return hmac.new(key, label + bytes(nonce) + int(segment).to_bytes(2, "big"), hashlib.sha256).digest()
 
 
 def keyed_permutation(key: bytes, label: str, n: int) -> np.ndarray:
@@ -320,14 +335,19 @@ def undiffuse(bits: np.ndarray, key: bytes) -> np.ndarray:
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
 class DecompositionParams:
-    """Header-transmitted decomposition parameters (7 bits total)."""
+    """Header-transmitted decomposition parameters (6 bits total).
+
+    alpha (1) + beta (1) + sigma (1) + block_idx (2) + delta (1) = 6 bits.  The
+    v1 code carried a seventh, reserved padding bit here that was never written
+    to the header; it was removed in revision 2 so the documented layout and the
+    33-bit chromosome of :mod:`amdt.stego.codec` agree exactly.
+    """
 
     alpha: int = 0          # 1 bit  -- T1 complement
     beta: int = 0           # 1 bit  -- T2 reverse
     sigma: int = 0          # 1 bit  -- T3 enable
     block_idx: int = 0      # 2 bits -- T3 block size index
     delta: int = 0          # 1 bit  -- T4 enable
-    _reserved: int = 0      # 1 bit  -- future use, keeps the header byte-aligned
 
     @property
     def block(self) -> int:
@@ -335,7 +355,6 @@ class DecompositionParams:
 
     def as_dict(self) -> Dict[str, int]:
         d = asdict(self)
-        d.pop("_reserved", None)
         d["block_size"] = self.block
         return d
 
@@ -442,15 +461,18 @@ def describe() -> Dict[str, object]:
             {
                 "id": "T4",
                 "name": "keyed diffusion",
-                "formula": "s_i = t_i XOR s_{i-1} XOR k_i,  k = KS_K('dif', L)",
+                "formula": "s_i = t_i XOR s_{i-1} XOR k_i,  k = KS_{K_s}('dif', L),  K_s = HMAC(K, 'AMDT-seg'||nonce||s)",
                 "parameters": {
                     "delta": "1 bit enable, in header",
                     "k, IV": "derived from secret key K, never transmitted",
                 },
                 "role": (
-                    "security layer: makes the embedded stream computationally "
-                    "indistinguishable from uniform, so payload-statistics "
-                    "attacks (chi-square, pairs-of-values) gain no advantage"
+                    "security layer: randomises payload statistics. Under the "
+                    "PRF assumption on HMAC-SHA256 and a fresh nonce per stego "
+                    "object, the embedded bit-stream is pseudorandom to an "
+                    "adversary without K; this is a statement about the payload "
+                    "bits only, not about the embedding changes, and it gives no "
+                    "protection against residual-based steganalysis"
                 ),
                 "invertible": True,
             },
@@ -463,8 +485,8 @@ def describe() -> Dict[str, object]:
                 "invertible": True,
             },
         ],
-        "header_bits": {"alpha": 1, "beta": 1, "sigma": 1, "block_idx": 2, "delta": 1, "reserved": 1},
-        "key": "256-bit shared secret, never embedded",
+        "header_bits": {"alpha": 1, "beta": 1, "sigma": 1, "block_idx": 2, "delta": 1},
+        "key": "256-bit shared secret, never embedded; a 64-bit public nonce per stego object is embedded in the header",
         "distortion_layers": list(distortion_layers),
         "security_layers": list(security_layers),
     }

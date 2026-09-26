@@ -11,6 +11,17 @@ bit-plane and GA logic are ports of `CreateHostPixelSeq.m`, `EmbeddingTheMessage
 and `GApart.m`, with three bugs in the original traversal fixed and documented
 in `src/amdt/stego/traversal.py`.
 
+> **Revision 2 (IJIES paper ID 20265582).** The code that produced the revised
+> manuscript is in `revision/`. See [`revision/README.md`](revision/README.md) for the
+> data, the command behind every table and figure, and the conventions. Summary of
+> the changes: HMAC-SHA256 keystream with a per-message nonce and an authenticated
+> header; the detectability-aware variant AMDT-D (`stego/amdt_d.py`); complete STC
+> systems (`stego/stc.py`) and reference costs (`baselines/reference.py`), which
+> replace MiPOD-lite; the 2026 baselines FM-PSO-LSB and Evolved-HILL; the full
+> 34,671-D SRM (`steganalysis/srm_full.py`); a matched-budget `no_ga` control and a
+> new `no_search` control. The "honest findings" section below was written for the
+> first revision and is kept for the record.
+
 ---
 
 ## Reviewer comment → artifact
@@ -38,7 +49,7 @@ pip install -r requirements-local.txt      # CPU torch wheel
 # Colab GPU (adds the CUDA build for CNN steganalysis):
 # pip install -r requirements.txt
 
-pytest -q                      # 210 correctness tests, ~1 s
+pytest -q                      # 238 correctness tests (6 skip without natural covers / wandb), ~10 s
 ./run_overnight.sh             # the full rebuttal run, ~6-9 h
 ```
 
@@ -87,7 +98,8 @@ direction 4b | x_off 9b | y_off 9b | mask 4b | alpha 1b | beta 1b
           | bp_dir 1b | sigma 1b | block_idx 2b | delta 1b
 ```
 
-giving a search space of 4.0 × 10⁹ per segment. The GA (population 25,
+giving an unconstrained space of 16 × 512 × 512 × 15 × 2⁶ × 4 = 8.05 × 10⁹
+genotypes per segment, of which 2.01 × 10⁹ are searched (σ = δ = 1). The GA (population 25,
 tournament 3, two-point crossover 0.8, mutation 0.1, elitism 1) minimises MSE
 **subject to the security constraint** `sigma = delta = 1` — see
 `SECURITY_LOCKS` in `stego/amdt.py`. Dropping that constraint (the
@@ -95,9 +107,11 @@ tournament 3, two-point crossover 0.8, mutation 0.1, elitism 1) minimises MSE
 a randomised payload agrees with the cover's LSB plane slightly less often than
 a structured one. That is reported explicitly rather than hidden in a default.
 
-Extraction is **blind given the key**: a 60 + 33·S bit header (magic, version,
-segment count, payload length, per-segment genes, CRC-16) is written into the
-reserved bottom rows. The 256-bit secret is never embedded.
+Extraction is **blind given the key**: a 116 + 33·S bit header (64-bit nonce,
+then version, segment count, payload length and the per-segment genes encrypted
+under the HMAC-SHA256 keystream, then a 16-bit authentication tag) is written
+into the reserved bottom rows. The header has no fixed signature. The 256-bit
+secret is never embedded.
 
 ---
 
