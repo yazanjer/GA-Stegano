@@ -98,8 +98,10 @@ direction 4b | x_off 9b | y_off 9b | mask 4b | alpha 1b | beta 1b
           | bp_dir 1b | sigma 1b | block_idx 2b | delta 1b
 ```
 
-giving an unconstrained space of 16 × 512 × 512 × 15 × 2⁶ × 4 = 8.05 × 10⁹
-genotypes per segment, of which 2.01 × 10⁹ are searched (σ = δ = 1). The GA (population 25,
+giving an unconstrained space of 16 × 512 × 512 × 15 × 2⁵ × 4 = 8.05 × 10⁹
+genotypes per segment (the mask gene takes the values 1–15; mask 0 selects no
+bit-plane and is excluded, which is why this is below the 2³³ = 8.59 × 10⁹ bit
+patterns of the field), of which 2.01 × 10⁹ are searched (σ = δ = 1). The GA (population 25,
 tournament 3, two-point crossover 0.8, mutation 0.1, elitism 1) minimises MSE
 **subject to the security constraint** `sigma = delta = 1` — see
 `SECURITY_LOCKS` in `stego/amdt.py`. Dropping that constraint (the
